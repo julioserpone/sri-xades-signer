@@ -1,0 +1,9 @@
+# CODEOWNERS
+
+# Mantenedor principal. Revisa cambios de firma, seguridad y despliegue.
+* @julioserpone
+
+# Reglas y automatización
+/.github/ @julioserpone
+/scripts/ @julioserpone
+/infra/ @julioserpone

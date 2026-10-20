@@ -1,0 +1,44 @@
+name: Feature request
+description: Propón una mejora o una nueva capacidad.
+title: "feat: "
+labels: ["enhancement", "triage"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problema o necesidad
+      description: ¿Qué falta y por qué es importante?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Propuesta
+      description: Describe la solución esperada y el contrato, si aplica.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternativas consideradas
+  - type: dropdown
+    id: impact
+    attributes:
+      label: Impacto
+      options:
+        - Firma / perfil XAdES
+        - API / contrato
+        - Seguridad
+        - Despliegue / infraestructura
+        - Documentación / herramientas
+    validations:
+      required: true
+  - type: checkboxes
+    id: security
+    attributes:
+      label: Confirmación
+      options:
+        - label: Entiendo que los cambios de firma requieren ADR y validación SRI.
+          required: true
+        - label: No incluí secretos, certificados ni datos personales.
+          required: true

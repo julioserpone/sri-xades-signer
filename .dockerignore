@@ -1,0 +1,15 @@
+.git
+.github
+.idea
+.vscode
+docs
+target/original-*
+target/*-shaded.jar
+target/*.zip
+*.p12
+*.pfx
+*.jks
+*.pem
+*.key
+.env
+.env.*

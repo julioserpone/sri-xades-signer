@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build, test, package
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Verify
+        run: mvn -B -ntp verify
+
+      - name: Package Lambda
+        run: ./scripts/package-lambda.sh --skip-build
+
+      - name: Upload Lambda ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: lambda-zip
+          path: target/lambda.zip
+          retention-days: 7
+          if-no-files-found: error
+
+  ci-success:
+    name: ci-success
+    if: always()
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require successful build
+        run: |
+          if [ "${{ needs.build.result }}" != "success" ]; then
+            echo "build result: ${{ needs.build.result }}"
+            exit 1
+          fi

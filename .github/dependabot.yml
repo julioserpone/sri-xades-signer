@@ -1,0 +1,38 @@
+version: 2
+updates:
+  - package-ecosystem: maven
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: America/Guayaquil
+    open-pull-requests-limit: 5
+    groups:
+      maven-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+    ignore:
+      # DSS changes require an ADR and SRI certification validation.
+      - dependency-name: "eu.europa.ec.joinup.sd-dss:*"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: America/Guayaquil
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: docker
+    directory: "/"
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 3

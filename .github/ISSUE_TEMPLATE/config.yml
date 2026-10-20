@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Reporte privado de seguridad
+    url: https://github.com/julioserpone/sri-xades-signer/security/advisories/new
+    about: No reportes vulnerabilidades en issues públicos.
+  - name: Documentación
+    url: https://github.com/julioserpone/sri-xades-signer/tree/main/docs
+    about: Revisa API, despliegue, certificación y modelo de amenazas.

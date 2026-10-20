@@ -1,0 +1,13 @@
+* text=auto eol=lf
+
+*.java text diff=java
+*.xml text diff=xml
+*.yml text
+*.yaml text
+*.md text
+*.sh text eol=lf
+*.p12 binary
+*.pfx binary
+*.jks binary
+*.jar binary
+*.zip binary

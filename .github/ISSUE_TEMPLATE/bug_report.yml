@@ -1,0 +1,64 @@
+name: Bug report
+description: Reporta un fallo reproducible del firmador o del despliegue.
+title: "fix: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        No incluyas certificados, contraseñas, XML reales, datos de contribuyentes ni secretos.
+        Para vulnerabilidades usa el reporte privado de Security, no este formulario.
+  - type: textarea
+    id: description
+    attributes:
+      label: Descripción
+      description: ¿Qué ocurrió y qué esperabas?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Pasos para reproducir
+      placeholder: |
+        1. Ejecutar ...
+        2. Enviar ...
+        3. Ver ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Versión o commit
+      placeholder: v0.1.0 / commit SHA
+    validations:
+      required: true
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Entorno
+      options:
+        - Local (CLI)
+        - AWS Lambda
+        - Pruebas unitarias
+        - Empaquetado/CI
+        - Documentación
+    validations:
+      required: true
+  - type: input
+    id: java
+    attributes:
+      label: Versión de Java
+      placeholder: "21.0.x"
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs o errores (sin secretos)
+      description: Usa requestId y mensajes genéricos. No pegues XML real ni material criptográfico.
+      render: text
+  - type: checkboxes
+    id: security
+    attributes:
+      label: Confirmación
+      options:
+        - label: No incluí secretos, certificados ni datos personales.
+          required: true

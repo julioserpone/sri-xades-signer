@@ -1,0 +1,133 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Firmador XAdES-BES para comprobantes electrónicos del SRI de Ecuador.
+  Expone POST /v1/sign con autenticación AWS_IAM y lee el PKCS#12 desde Secrets Manager.
+
+Parameters:
+  Stage:
+    Type: String
+    Default: cert
+    AllowedValues: [cert, dev, prod]
+    Description: Etapa de despliegue. Usa prod solo después de la certificación SRI.
+
+  CertificateSecretArn:
+    Type: String
+    NoEcho: true
+    Description: ARN del secreto de Secrets Manager con el JSON {p12Base64,password,alias}.
+
+  CertificateKmsKeyArn:
+    Type: String
+    Default: ""
+    Description: ARN opcional de una CMK de KMS para descifrar el secreto.
+
+  MaxXmlBytes:
+    Type: Number
+    Default: 1048576
+    MinValue: 1024
+    MaxValue: 5242880
+    Description: Tamaño máximo del XML de entrada.
+
+  AllowedRoots:
+    Type: String
+    Default: ""
+    Description: Raíces permitidas separadas por coma; vacío usa la lista SRI por defecto.
+
+  CertificateCacheSeconds:
+    Type: Number
+    Default: 300
+    MinValue: 0
+    MaxValue: 3600
+    Description: TTL del certificado en memoria.
+
+  ReservedConcurrency:
+    Type: Number
+    Default: 5
+    MinValue: 1
+    MaxValue: 100
+    Description: Límite de concurrencia para controlar costo y abuso.
+
+  LogRetentionInDays:
+    Type: Number
+    Default: 30
+    AllowedValues: [7, 14, 30, 60, 90, 180, 365]
+    Description: Retención de logs en CloudWatch.
+
+Conditions:
+  HasKmsKey: !Not [!Equals [!Ref CertificateKmsKeyArn, ""]]
+
+Resources:
+  SignApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref Stage
+      EndpointConfiguration: REGIONAL
+      MinimumCompressionSize: 1024
+      MethodSettings:
+        - ResourcePath: "/*"
+          HttpMethod: "*"
+          ThrottlingBurstLimit: 20
+          ThrottlingRateLimit: 10
+
+  SignFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "sri-xades-signer-${Stage}"
+      Description: Firma XAdES-BES para el SRI.
+      CodeUri: ../target/lambda.zip
+      Handler: com.julioserpone.srixadessigner.lambda.SignHandler::handleRequest
+      Runtime: java21
+      Architectures: [arm64]
+      MemorySize: 1024
+      Timeout: 30
+      ReservedConcurrentExecutions: !Ref ReservedConcurrency
+      Environment:
+        Variables:
+          CERTIFICATE_SECRET_ID: !Ref CertificateSecretArn
+          MAX_XML_BYTES: !Ref MaxXmlBytes
+          ALLOWED_ROOTS: !Ref AllowedRoots
+          CERTIFICATE_CACHE_SECONDS: !Ref CertificateCacheSeconds
+          VERIFY_AFTER_SIGN: "true"
+          REQUIRE_CERTIFICATE_VALIDITY: "true"
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource: !Ref CertificateSecretArn
+            - !If
+              - HasKmsKey
+              - Effect: Allow
+                Action:
+                  - kms:Decrypt
+                Resource: !Ref CertificateKmsKeyArn
+              - !Ref AWS::NoValue
+      Events:
+        Sign:
+          Type: Api
+          Properties:
+            RestApiId: !Ref SignApi
+            Path: /v1/sign
+            Method: post
+            Auth:
+              Authorizer: AWS_IAM
+
+  SignFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${SignFunction}"
+      RetentionInDays: !Ref LogRetentionInDays
+
+Outputs:
+  SignEndpoint:
+    Description: URL de POST /v1/sign
+    Value: !Sub "https://${SignApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}/v1/sign"
+
+  FunctionName:
+    Description: Nombre de la función Lambda
+    Value: !Ref SignFunction
+
+  FunctionArn:
+    Description: ARN de la función Lambda
+    Value: !GetAtt SignFunction.Arn

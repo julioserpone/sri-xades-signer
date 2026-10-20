@@ -1,0 +1,39 @@
+# Build output
+target/
+*.class
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.settings/
+.project
+.classpath
+
+# Operating system
+.DS_Store
+Thumbs.db
+
+# Secrets and certificates: never commit these
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.pem
+*.key
+*.crt
+secrets/
+.env
+.env.*
+!.env.example
+
+# Logs and temporary files
+*.log
+*.tmp
+*.swp
+*~
+
+# Windows
+desktop.ini
