@@ -346,7 +346,10 @@ Por defecto:
 Para usar un certificado real de certificación:
 
 ```bash
-STAGE=cert ./scripts/aws-create-test-env.sh   --p12 /ruta/certificado.p12   --alias mi-alias
+STAGE=cert \
+./scripts/aws-create-test-env.sh \
+  --p12 /ruta/certificado.p12 \
+  --alias mi-alias
 ```
 
 Con `STAGE=cert`, el stack por defecto es `sri-xades-signer-cert` y el secreto
@@ -355,7 +358,19 @@ Con `STAGE=cert`, el stack por defecto es `sri-xades-signer-cert` y el secreto
 Para un cliente o entorno separado:
 
 ```bash
-STACK_NAME=sri-xades-signer-cliente1 SECRET_NAME=sri-xades-signer/cliente1 ./scripts/aws-create-test-env.sh --p12 /ruta/cliente1.p12 --alias cliente1
+STACK_NAME=sri-xades-signer-cliente1 \
+SECRET_NAME=sri-xades-signer/cliente1 \
+STATE_FILE=target/aws-test-env-cliente1 \
+./scripts/aws-create-test-env.sh \
+  --p12 /ruta/cliente1.p12 \
+  --alias cliente1
+```
+
+Para eliminarlo, usa el mismo `STATE_FILE`:
+
+```bash
+STATE_FILE=target/aws-test-env-cliente1 \
+./scripts/aws-delete-test-env.sh
 ```
 
 El nombre de la función Lambda ahora es el nombre del stack, así que puedes tener varios
