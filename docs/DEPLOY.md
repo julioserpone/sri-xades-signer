@@ -2,9 +2,12 @@
 
 ## Requisitos
 
-- Java 21 y Maven 3.9+.
+- Java 21 y Maven 3.9+ **si compilas localmente**. Para desplegar el ZIP de un release no
+  necesitas Java.
 - AWS CLI v2 autenticado.
 - AWS SAM CLI.
+
+Si es tu primera vez en AWS, empieza por [AWS-SETUP.md](AWS-SETUP.md).
 - Una cuenta AWS con permisos para CloudFormation, IAM, Lambda, API Gateway, Secrets Manager y S3
   (SAM usa S3 para artefactos).
 - Un PKCS#12 válido con clave privada RSA y cadena de certificados.
@@ -15,10 +18,16 @@ secreto separado.
 ## 1. Compilar y verificar
 
 ```bash
-export JAVA_HOME=/ruta/a/jdk-21
+# macOS con Homebrew:
+export JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home
+export PATH="$JAVA_HOME/bin:$PATH"
+
 mvn -B verify
 ./scripts/package-lambda.sh --skip-build
 ```
+
+Si no compilas, descarga `lambda.zip` desde la página de releases y guárdalo en
+`target/lambda.zip`.
 
 El resultado es `target/lambda.zip`. Verifica su contenido:
 

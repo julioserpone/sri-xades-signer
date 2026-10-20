@@ -26,11 +26,19 @@ El firmador **no** implementa autenticación propia: el endpoint debe publicarse
 
 ## Requisitos
 
-- Java 21.
-- Maven 3.9+.
+- Java 21 y Maven 3.9+ **solo si vas a compilar**; para desplegar el ZIP de un release no
+  necesitas Java.
 - Una cuenta AWS para desplegar.
 - AWS SAM CLI y AWS CLI v2 para el despliegue.
 - Un certificado PKCS#12 (`.p12`) con clave privada RSA y cadena de certificados, válido para firma electrónica.
+
+En macOS con Homebrew:
+
+```bash
+brew install openjdk@21 maven
+export JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home
+export PATH="$JAVA_HOME/bin:$PATH"
+```
 
 ## Compilar y probar
 
@@ -80,11 +88,15 @@ el ambiente de certificación del SRI. Crea:
 Pasos resumidos:
 
 1. Crear el secreto con el PKCS#12 y su contraseña.
-2. Empaquetar el Lambda.
+2. Descargar `lambda.zip` desde [Releases](https://github.com/julioserpone/sri-xades-signer/releases)
+   o empaquetarlo localmente.
 3. Desplegar `infra/template.yaml` con SAM.
 4. Probar con firma SigV4.
 
-Consulta [docs/DEPLOY.md](docs/DEPLOY.md) para el procedimiento completo y [docs/API.md](docs/API.md) para el contrato HTTP.
+Si es tu primera vez en AWS, sigue [docs/AWS-SETUP.md](docs/AWS-SETUP.md): incluye usuario
+IAM, perfil de AWS CLI, certificado de prueba, secreto, despliegue, prueba del endpoint y
+limpieza. Consulta [docs/DEPLOY.md](docs/DEPLOY.md) para el procedimiento detallado y
+[docs/API.md](docs/API.md) para el contrato HTTP.
 
 ## Contrato HTTP
 
