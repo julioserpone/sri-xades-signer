@@ -2,6 +2,10 @@
 target/
 *.class
 
+# AWS SAM local configuration and build cache
+samconfig.toml
+.aws-sam/
+
 # IDE
 .idea/
 .vscode/

@@ -5,6 +5,21 @@ Todos los cambios relevantes se documentan aquí. El formato sigue
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-10-20
+
+### Cambiado
+
+- BouncyCastle actualizado a 1.86, manteniendo alineados `bcprov` y `bcpkix`.
+- Jackson actualizado a 2.22.3 con las correcciones de seguridad de la rama 2.x.
+- AWS Lambda Java Core actualizado a 1.4.1 y SLF4J a 2.0.20.
+- Plugins Maven actualizados: compiler, surefire, shade, enforcer y SpotBugs.
+- Documentación de configuración inicial de AWS y despliegue sin compilar Java.
+- El workflow de release publica los tags como prerelease mientras no exista certificación SRI.
+
+### Nota
+
+- Este release sigue siendo experimental y no está certificado por el SRI.
+
 ## [0.1.0] - 2026-10-20
 
 ### Agregado
@@ -40,5 +55,6 @@ Todos los cambios relevantes se documentan aquí. El formato sigue
 - Una firma por invocación; no hay batch.
 - La imagen Docker es opcional y no se usa en el flujo principal de despliegue.
 
-[Unreleased]: https://github.com/julioserpone/sri-xades-signer/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/julioserpone/sri-xades-signer/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/julioserpone/sri-xades-signer/releases/tag/v0.1.1
 [0.1.0]: https://github.com/julioserpone/sri-xades-signer/releases/tag/v0.1.0

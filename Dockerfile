@@ -12,7 +12,7 @@
 # La imagen requiere credenciales AWS para leer Secrets Manager. No baked-in secrets.
 FROM public.ecr.aws/lambda/java:21
 
-ARG JAR_FILE=target/sri-xades-signer-0.1.0.jar
+ARG JAR_FILE=target/sri-xades-signer-0.1.1.jar
 COPY ${JAR_FILE} ${LAMBDA_TASK_ROOT}/lib/
 
 CMD ["com.julioserpone.srixadessigner.lambda.SignHandler::handleRequest"]
