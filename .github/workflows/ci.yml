@@ -35,7 +35,7 @@ jobs:
         run: ./scripts/package-lambda.sh --skip-build
 
       - name: Upload Lambda ZIP
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: lambda-zip
           path: target/lambda.zip
