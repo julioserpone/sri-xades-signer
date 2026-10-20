@@ -28,18 +28,18 @@
 
     <dss.version>6.5.1</dss.version>
     <aws.sdk.version>2.57.0</aws.sdk.version>
-    <aws.lambda.core.version>1.2.3</aws.lambda.core.version>
+    <aws.lambda.core.version>1.4.1</aws.lambda.core.version>
     <aws.lambda.events.version>3.16.1</aws.lambda.events.version>
-    <bouncycastle.version>1.81</bouncycastle.version>
-    <jackson.version>2.18.3</jackson.version>
+    <bouncycastle.version>1.86</bouncycastle.version>
+    <jackson.version>2.22.3</jackson.version>
     <junit.version>5.11.4</junit.version>
-    <slf4j.version>2.0.16</slf4j.version>
-    <maven.compiler.plugin.version>3.13.0</maven.compiler.plugin.version>
-    <maven.surefire.plugin.version>3.5.2</maven.surefire.plugin.version>
-    <maven.shade.plugin.version>3.6.0</maven.shade.plugin.version>
-    <maven.enforcer.plugin.version>3.5.0</maven.enforcer.plugin.version>
+    <slf4j.version>2.0.20</slf4j.version>
+    <maven.compiler.plugin.version>3.16.0</maven.compiler.plugin.version>
+    <maven.surefire.plugin.version>3.6.0</maven.surefire.plugin.version>
+    <maven.shade.plugin.version>3.6.2</maven.shade.plugin.version>
+    <maven.enforcer.plugin.version>3.6.3</maven.enforcer.plugin.version>
     <spotless.plugin.version>2.44.2</spotless.plugin.version>
-    <spotbugs.plugin.version>4.8.6.6</spotbugs.plugin.version>
+    <spotbugs.plugin.version>4.10.5.0</spotbugs.plugin.version>
   </properties>
 
   <dependencyManagement>
