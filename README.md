@@ -53,7 +53,7 @@ mvn -B spotless:apply
 ./scripts/package-lambda.sh
 ```
 
-El script ejecuta `mvn verify`, arma `target/lambda.zip` y muestra su SHA-256. El ZIP contiene el JAR shaded en la raíz, listo para:
+El script ejecuta `mvn clean verify`, arma `target/lambda.zip` y muestra su SHA-256. El ZIP contiene el JAR shaded en la raíz, listo para:
 
 ```bash
 aws lambda update-function-code \
@@ -69,7 +69,8 @@ docker build -t sri-xades-signer .
 
 ## Despliegue
 
-La plantilla SAM crea:
+La plantilla usa `Stage=cert` por defecto. No uses `Stage=prod` hasta completar la validación en
+el ambiente de certificación del SRI. Crea:
 
 - Una función Lambda Java 21.
 - Una API Gateway regional con autorización **AWS_IAM**.
