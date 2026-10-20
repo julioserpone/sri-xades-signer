@@ -12,6 +12,7 @@ Todos los cambios relevantes se documentan aquí. El formato sigue
 - Firmador XAdES-BES enveloped para comprobantes electrónicos del SRI.
 - Perfil XAdES 1.3.2 con `SigningCertificate` v1, RSA-SHA1, SHA-1, UTF-8 y `KeyInfo` firmado.
 - Referencia explícita al `id` de la raíz con transformada `enveloped-signature`.
+- `DataObjectFormat` con descripción `contenido comprobante` y MIME `text/xml`.
 - Carga de PKCS#12 con validación de clave RSA y correspondencia con el certificado.
 - Carga del PKCS#12 desde AWS Secrets Manager con caché y rotación por TTL.
 - Handler AWS Lambda para `POST /v1/sign` con autenticación IAM.

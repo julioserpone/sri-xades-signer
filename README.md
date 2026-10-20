@@ -69,7 +69,8 @@ docker build -t sri-xades-signer .
 
 ## Despliegue
 
-La plantilla SAM crea:
+La plantilla usa `Stage=cert` por defecto. No uses `Stage=prod` hasta completar la validación en
+el ambiente de certificación del SRI. Crea:
 
 - Una función Lambda Java 21.
 - Una API Gateway regional con autorización **AWS_IAM**.

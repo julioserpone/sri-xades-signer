@@ -75,6 +75,18 @@ class XadesBesSignerTest {
         MessageDigest.getInstance("SHA-1").digest(identity.certificate().getEncoded()),
         Base64.getDecoder().decode(digestValue));
 
+    Element keyInfo =
+        (Element) document.getElementsByTagNameNS(TestXml.XMLDSIG_NS, "KeyInfo").item(0);
+    String keyInfoId = keyInfo.getAttribute("Id");
+    assertFalse(keyInfoId.isBlank());
+    boolean keyInfoIsSigned = false;
+    NodeList references = document.getElementsByTagNameNS(TestXml.XMLDSIG_NS, "Reference");
+    for (int i = 0; i < references.getLength(); i++) {
+      Element reference = (Element) references.item(i);
+      keyInfoIsSigned |= ("#" + keyInfoId).equals(reference.getAttribute("URI"));
+    }
+    assertTrue(keyInfoIsSigned, "KeyInfo must be covered by a reference");
+
     assertFalse(
         document
             .getElementsByTagNameNS(TestXml.XMLDSIG_NS, "SignatureValue")

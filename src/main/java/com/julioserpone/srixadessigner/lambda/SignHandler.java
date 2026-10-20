@@ -58,28 +58,28 @@ public final class SignHandler
         method = input.getRequestContext().getHttpMethod();
       }
       if (!"POST".equalsIgnoreCase(method)) {
-        return errorResponse(405, "method_not_allowed", requestId, context);
+        return errorResponse(405, "method_not_allowed", requestId);
       }
       if (!hasXmlContentType(input.getHeaders())) {
-        return errorResponse(415, "unsupported_media_type", requestId, context);
+        return errorResponse(415, "unsupported_media_type", requestId);
       }
 
       byte[] xml = requestBody(input);
       byte[] signed = signer.sign(xml, identityProvider.get());
       return xmlResponse(200, signed, requestId);
     } catch (PayloadTooLargeException e) {
-      return errorResponse(413, "payload_too_large", requestId, context);
+      return errorResponse(413, "payload_too_large", requestId);
     } catch (InvalidXmlException | IllegalArgumentException e) {
-      return errorResponse(400, "invalid_xml", requestId, context);
+      return errorResponse(400, "invalid_xml", requestId);
     } catch (CertificateLoadException e) {
       logError(context, requestId, e);
-      return errorResponse(500, "certificate_unavailable", requestId, context);
+      return errorResponse(500, "certificate_unavailable", requestId);
     } catch (SigningException e) {
       logError(context, requestId, e);
-      return errorResponse(500, "signing_failed", requestId, context);
+      return errorResponse(500, "signing_failed", requestId);
     } catch (RuntimeException e) {
       logError(context, requestId, e);
-      return errorResponse(500, "internal_error", requestId, context);
+      return errorResponse(500, "internal_error", requestId);
     }
   }
 
@@ -115,11 +115,7 @@ public final class SignHandler
         .withIsBase64Encoded(false);
   }
 
-  private APIGatewayProxyResponseEvent errorResponse(
-      int status, String code, String requestId, Context context) {
-    if (status >= 500) {
-      logError(context, requestId, null);
-    }
+  private APIGatewayProxyResponseEvent errorResponse(int status, String code, String requestId) {
     try {
       String body = objectMapper.writeValueAsString(Map.of("error", code, "requestId", requestId));
       return new APIGatewayProxyResponseEvent()
