@@ -53,7 +53,7 @@ El handler acepta body directo o `isBase64Encoded=true` (API Gateway puede marca
 
 ```bash
 curl --request POST "$SIGNER_URL/v1/sign" \
-  --aws-sigv4 "aws:amz:us-east-1:execute-api" \
+  --aws-sigv4 "aws:amz:us-east-2:execute-api" \
   --user "$AWS_ACCESS_KEY_ID:$AWS_SECRET_ACCESS_KEY" \
   --header "x-amz-security-token: $AWS_SESSION_TOKEN" \
   --header "Content-Type: application/xml" \
@@ -125,7 +125,7 @@ correlacionar con CloudWatch.
 | `CERTIFICATE_ALIAS` | — | Alias de la clave privada en el PKCS#12 |
 | `CERTIFICATE_CACHE_SECONDS` | `300` | TTL de caché del certificado en memoria |
 
-La plantilla SAM fija concurrencia reservada y throttling. Ajusta esos valores según tu volumen,
+La plantilla SAM configura throttling en API Gateway y permite concurrencia reservada opcional (`ReservedConcurrency=0` por defecto). Ajusta esos valores según tu volumen,
 pero mantén el endpoint autenticado y con límites.
 
 ## Ejemplo de verificación
