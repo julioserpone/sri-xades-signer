@@ -121,7 +121,7 @@ Ejemplo con `curl` y SigV4 (requiere `curl` reciente):
 
 ```bash
 curl --request POST "$SIGNER_URL/v1/sign" \
-  --aws-sigv4 "aws:amz:us-east-1:execute-api" \
+  --aws-sigv4 "aws:amz:us-east-2:execute-api" \
   --user "$AWS_ACCESS_KEY_ID:$AWS_SECRET_ACCESS_KEY" \
   --header "x-amz-security-token: $AWS_SESSION_TOKEN" \
   --header "Content-Type: application/xml" \

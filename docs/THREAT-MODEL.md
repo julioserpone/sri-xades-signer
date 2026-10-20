@@ -33,7 +33,7 @@ Cliente autorizado --SigV4--> API Gateway IAM --> Lambda --> Secrets Manager
 | Robo de clave privada del repositorio | Crítico | `.gitignore`, revisión, secret scanning; PKCS#12 solo en Secrets Manager | Implementado |
 | Clave en variable de entorno o logs | Crítico | El handler solo recibe el ARN; no registra secretos | Implementado |
 | XXE / lectura de archivos | Alto | Parser sin DTD, entidades externas, XInclude ni schemas externos | Implementado |
-| Expansión de entidades / DoS | Medio | `FEATURE_SECURE_PROCESSING`, límite de bytes, concurrencia reservada | Implementado |
+| Expansión de entidades / DoS | Medio | `FEATURE_SECURE_PROCESSING`, límite de bytes, throttling y concurrencia reservada opcional | Implementado |
 | Firma de contenido arbitrario | Alto | Lista de raíces SRI, `id` obligatorio, un XML por llamada | Implementado |
 | Doble firma / confusión | Medio | Rechazo si ya existe `ds:Signature` | Implementado |
 | Firma con certificado vencido | Medio | `checkValidity()` configurable | Implementado |
