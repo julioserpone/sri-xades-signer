@@ -7,13 +7,20 @@
 - AWS CLI v2 autenticado.
 - AWS SAM CLI.
 
-Si es tu primera vez en AWS, empieza por [AWS-SETUP.md](AWS-SETUP.md).
 - Una cuenta AWS con permisos para CloudFormation, IAM, Lambda, API Gateway, Secrets Manager y S3
   (SAM usa S3 para artefactos).
 - Un PKCS#12 válido con clave privada RSA y cadena de certificados.
 
 No uses el certificado de producción en pruebas locales. Crea un certificado de prueba y un
 secreto separado.
+
+Si es tu primera vez en AWS, empieza por [AWS-SETUP.md](AWS-SETUP.md). Para crear y
+eliminar el entorno de pruebas de forma automatizada:
+
+```bash
+./scripts/aws-create-test-env.sh
+./scripts/aws-delete-test-env.sh
+```
 
 ## 1. Compilar y verificar
 
@@ -35,7 +42,7 @@ El resultado es `target/lambda.zip`. Verifica su contenido:
 unzip -l target/lambda.zip | head
 ```
 
-Debe contener el JAR shaded dentro de `lib/`, por ejemplo `lib/sri-xades-signer-0.1.2.jar`.
+Debe contener el JAR shaded dentro de `lib/`, por ejemplo `lib/sri-xades-signer-0.1.3.jar`.
 
 ## 2. Crear el secreto
 

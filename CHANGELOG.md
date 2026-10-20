@@ -5,6 +5,22 @@ Todos los cambios relevantes se documentan aquí. El formato sigue
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-10-20
+
+### Agregado
+
+- `scripts/aws-create-test-env.sh`: crea o actualiza el secreto, descarga el ZIP del
+  release y despliega el stack de pruebas desde macOS.
+- `scripts/aws-delete-test-env.sh`: elimina el stack y el secreto de pruebas con
+  confirmación explícita.
+- Los scripts guardan metadatos no sensibles en `target/aws-test-env` y permiten
+  sobreescribir stack, secreto, perfil y región por variables de entorno.
+
+### Corregido
+
+- El nombre de la función Lambda ahora usa el nombre del stack. Antes dos stacks con el
+  mismo `Stage` intentaban usar el mismo nombre de función.
+
 ## [0.1.2] - 2026-10-20
 
 ### Corregido
@@ -68,7 +84,8 @@ Todos los cambios relevantes se documentan aquí. El formato sigue
 - Una firma por invocación; no hay batch.
 - La imagen Docker es opcional y no se usa en el flujo principal de despliegue.
 
-[Unreleased]: https://github.com/julioserpone/sri-xades-signer/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/julioserpone/sri-xades-signer/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/julioserpone/sri-xades-signer/releases/tag/v0.1.3
 [0.1.2]: https://github.com/julioserpone/sri-xades-signer/releases/tag/v0.1.2
 [0.1.1]: https://github.com/julioserpone/sri-xades-signer/releases/tag/v0.1.1
 [0.1.0]: https://github.com/julioserpone/sri-xades-signer/releases/tag/v0.1.0

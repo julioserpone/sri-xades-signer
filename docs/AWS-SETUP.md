@@ -15,6 +15,10 @@ para estas pruebas.
   recursos encendidos.
 - **Producción:** no uses `Stage=prod` hasta completar la validación del SRI.
 
+> **Atajo:** si ya tienes el perfil `sri-xades` configurado, puedes crear el secreto y el
+> stack de pruebas con `./scripts/aws-create-test-env.sh`. La sección 13 explica las
+> opciones y el script de limpieza.
+
 ## 2. Protege la cuenta raíz
 
 1. Entra a la consola de AWS con la cuenta raíz.
@@ -151,7 +155,7 @@ Con GitHub CLI:
 
 ```bash
 mkdir -p target
-gh release download v0.1.2 \
+gh release download v0.1.3 \
   --repo julioserpone/sri-xades-signer \
   --pattern lambda.zip \
   --dir target
@@ -283,7 +287,7 @@ Errores frecuentes:
 | `NoSuchBucket` | SAM no pudo crear/usar el bucket | Usa `--resolve-s3` o `--s3-bucket` |
 | `Invalid value for '--parameter-overrides': CertificateSecretArn=` | `SECRET_ARN` está vacío o se consultó en otra región | Exporta el ARN con `--region us-east-2` y compruébalo con `echo "$SECRET_ARN"` |
 | `ReservedConcurrentExecutions ... below its minimum value of [10]` | Cuenta nueva con límite de concurrencia | Despliega con `ReservedConcurrency=0` |
-| HTTP 502 + `ClassNotFoundException` | ZIP antiguo con el JAR en la raíz | Usa `lambda.zip` de `v0.1.2` o regenera con `./scripts/package-lambda.sh` |
+| HTTP 502 + `ClassNotFoundException` | ZIP antiguo con el JAR en la raíz | Usa `lambda.zip` de `v0.1.3` o regenera con `./scripts/package-lambda.sh` |
 
 ## 11. Limpieza
 
@@ -315,3 +319,76 @@ El cliente que firma comprobantes solo necesita:
 
 La clave privada nunca sale de Secrets Manager hacia el cliente. La Lambda la carga en
 memoria y la usa para firmar; no se escribe en logs ni se devuelve en la respuesta.
+
+## 13. Scripts automáticos para macOS
+
+Los scripts crean y eliminan el entorno de **pruebas**. No crean el usuario IAM ni sus
+access keys; eso se hace una sola vez en los pasos 2 y 4.
+
+### Crear o actualizar
+
+Con el perfil `sri-xades` ya configurado:
+
+```bash
+./scripts/aws-create-test-env.sh
+```
+
+Por defecto:
+
+- Usa `AWS_PROFILE=sri-xades`, `AWS_REGION=us-east-2` y `STAGE=dev`.
+- Genera un certificado autofirmado de prueba en `target/test-cert.p12`.
+- Crea o actualiza el secreto `sri-xades-signer/test`.
+- Descarga `lambda.zip` de `v0.1.3`.
+- Despliega el stack `sri-xades-signer-dev` con `ReservedConcurrency=0`.
+- Guarda endpoint y ARN en `target/aws-test-env` (sin contenido sensible).
+- Imprime la URL del endpoint.
+
+Para usar un certificado real de certificación:
+
+```bash
+STAGE=cert ./scripts/aws-create-test-env.sh   --p12 /ruta/certificado.p12   --alias mi-alias
+```
+
+Con `STAGE=cert`, el stack por defecto es `sri-xades-signer-cert` y el secreto
+`sri-xades-signer/cert`. Si no indicas `--p12`, el script se detiene.
+
+Para un cliente o entorno separado:
+
+```bash
+STACK_NAME=sri-xades-signer-cliente1 SECRET_NAME=sri-xades-signer/cliente1 ./scripts/aws-create-test-env.sh --p12 /ruta/cliente1.p12 --alias cliente1
+```
+
+El nombre de la función Lambda ahora es el nombre del stack, así que puedes tener varios
+stacks con el mismo `Stage` sin que choquen.
+
+Opciones útiles:
+
+```bash
+./scripts/aws-create-test-env.sh --rebuild          # compila con Java 21 en vez de descargar
+./scripts/aws-create-test-env.sh --zip ruta.zip     # usa un ZIP local
+```
+
+### Eliminar
+
+```bash
+./scripts/aws-delete-test-env.sh
+```
+
+Pide escribir `ELIMINAR`. Para automatización:
+
+```bash
+./scripts/aws-delete-test-env.sh --yes
+```
+
+Elimina el stack (Lambda, API Gateway, rol, log group) y el secreto. **No** elimina el
+usuario IAM, sus access keys ni la cuota de concurrencia de la cuenta. El borrado del
+secreto es irreversible.
+
+### Archivos locales
+
+- `target/aws-test-env`: stack, región, ARN y endpoint; no contiene la clave privada.
+- `target/test-cert.p12`: certificado autofirmado de prueba.
+- `target/test-cert-password.txt`: contraseña del certificado de prueba.
+- `target/test-cert-key.pem` y `target/test-cert.pem`: material del certificado de prueba.
+
+Todo `target/` está ignorado por Git.
