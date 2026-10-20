@@ -6,7 +6,7 @@ para estas pruebas.
 
 ## 1. Decisiones iniciales
 
-- **Región:** usa `us-east-1` en todos los comandos. Si eliges otra, cámbiala de forma
+- **Región:** usa `us-east-2` en todos los comandos. Si eliges otra, cámbiala de forma
   consistente en AWS CLI, SAM y el endpoint.
 - **Etapa:** usa `Stage=dev` para un certificado autofirmado de prueba y `Stage=cert`
   cuando tengas el certificado del ambiente de certificación del SRI.
@@ -72,7 +72,7 @@ Responde:
 
 - **AWS Access Key ID:** la clave del usuario `sri-xades-deployer`.
 - **AWS Secret Access Key:** el secreto correspondiente.
-- **Default region name:** `us-east-1`.
+- **Default region name:** `us-east-2`.
 - **Default output format:** `json`.
 
 Activa el perfil para esta terminal:
@@ -130,9 +130,14 @@ variable:
 ```bash
 export SECRET_ARN="$(aws secretsmanager describe-secret \
   --secret-id sri-xades-signer/test \
+  --region us-east-2 \
   --query ARN \
   --output text)"
 echo "$SECRET_ARN"
+
+if [ -z "$SECRET_ARN" ]; then
+  echo "ERROR: SECRET_ARN está vacío. Revisa la región y el nombre del secreto." >&2
+fi
 ```
 
 El script no guarda la contraseña en el repositorio ni en el historial de shells. No
@@ -146,14 +151,14 @@ Con GitHub CLI:
 
 ```bash
 mkdir -p target
-gh release download v0.1.1 \
+gh release download v0.1.2 \
   --repo julioserpone/sri-xades-signer \
   --pattern lambda.zip \
   --dir target
 ```
 
-También puedes descargarlo desde la página de releases del repositorio. El ZIP contiene un
-único JAR y no requiere Maven ni Java para desplegarse.
+También puedes descargarlo desde la página de releases del repositorio. El ZIP contiene el
+JAR shaded dentro de `lib/` y no requiere Maven ni Java para desplegarse.
 
 ### Opción B: compilar localmente
 
@@ -169,7 +174,7 @@ El resultado es `target/lambda.zip`.
 
 ```bash
 export AWS_PROFILE=sri-xades
-export AWS_REGION=us-east-1
+export AWS_REGION=us-east-2
 
 sam deploy \
   --stack-name sri-xades-signer-dev \
@@ -180,25 +185,32 @@ sam deploy \
   --profile sri-xades \
   --parameter-overrides \
     Stage=dev \
-    CertificateSecretArn="$SECRET_ARN"
+    CertificateSecretArn="$SECRET_ARN" \
+    ReservedConcurrency=0
 ```
 
 `--resolve-s3` crea y usa un bucket gestionado por SAM para subir el ZIP. Si tu cuenta
 bloquea la creación de buckets, crea uno y usa `--s3-bucket NOMBRE_DEL_BUCKET`.
+
+`ReservedConcurrency=0` significa **sin reserva de concurrencia**. Es lo recomendado en
+cuentas nuevas: AWS entrega 10 ejecuciones concurrentes por defecto y no permite reservar
+si quedan menos de 10 libres. El throttling de API Gateway sigue limitando el abuso.
+Cuando solicites un aumento de cuota, puedes usar `ReservedConcurrency=5` o el valor que
+necesites.
 
 La plantilla crea:
 
 - Lambda Java 21 con arquitectura `arm64`.
 - API Gateway regional con autenticación IAM.
 - Rol de ejecución con permiso solo para leer el secreto indicado y escribir logs.
-- Log group de CloudWatch, concurrencia reservada y throttling.
+- Log group de CloudWatch y throttling en API Gateway; la concurrencia reservada es opcional.
 
 Obtén la URL:
 
 ```bash
 export SIGNER_URL="$(aws cloudformation describe-stacks \
   --stack-name sri-xades-signer-dev \
-  --region us-east-1 \
+  --region us-east-2 \
   --query "Stacks[0].Outputs[?OutputKey=='SignEndpoint'].OutputValue" \
   --output text)"
 echo "$SIGNER_URL"
@@ -231,7 +243,7 @@ fi
 
 curl --fail-with-body --silent --show-error \
   --request POST "$SIGNER_URL" \
-  --aws-sigv4 "aws:amz:us-east-1:execute-api" \
+  --aws-sigv4 "aws:amz:us-east-2:execute-api" \
   "${CURL_AUTH[@]}" \
   --header "Content-Type: application/xml" \
   --data-binary @/tmp/factura-prueba.xml \
@@ -269,6 +281,9 @@ Errores frecuentes:
 | HTTP 400 `invalid_xml` | XML sin `id` de raíz, raíz no permitida o ya firmado | Usa el XML de prueba y no lo firmes dos veces |
 | HTTP 500 `certificate_unavailable` | Secreto, ARN, contraseña o alias incorrectos | Revisa Secrets Manager y los logs |
 | `NoSuchBucket` | SAM no pudo crear/usar el bucket | Usa `--resolve-s3` o `--s3-bucket` |
+| `Invalid value for '--parameter-overrides': CertificateSecretArn=` | `SECRET_ARN` está vacío o se consultó en otra región | Exporta el ARN con `--region us-east-2` y compruébalo con `echo "$SECRET_ARN"` |
+| `ReservedConcurrentExecutions ... below its minimum value of [10]` | Cuenta nueva con límite de concurrencia | Despliega con `ReservedConcurrency=0` |
+| HTTP 502 + `ClassNotFoundException` | ZIP antiguo con el JAR en la raíz | Usa `lambda.zip` de `v0.1.2` o regenera con `./scripts/package-lambda.sh` |
 
 ## 11. Limpieza
 
@@ -277,7 +292,7 @@ Cuando termines las pruebas:
 ```bash
 sam delete \
   --stack-name sri-xades-signer-dev \
-  --region us-east-1 \
+  --region us-east-2 \
   --profile sri-xades
 
 aws secretsmanager delete-secret \

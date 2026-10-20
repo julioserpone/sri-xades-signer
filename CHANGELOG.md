@@ -5,6 +5,19 @@ Todos los cambios relevantes se documentan aquí. El formato sigue
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-10-20
+
+### Corregido
+
+- El ZIP de Lambda ahora coloca el JAR shaded en `lib/`, que es la ruta que carga el
+  runtime Java de AWS Lambda. Antes el JAR quedaba en la raíz y el handler fallaba con
+  `ClassNotFoundException`.
+- La concurrencia reservada es opcional (`ReservedConcurrency=0` por defecto). Las cuentas
+  nuevas con límite de 10 ejecuciones concurrentes ya pueden desplegar sin ajustar el
+  límite de la cuenta.
+- La guía de AWS usa `us-east-2` de forma consistente y valida que `SECRET_ARN` no esté
+  vacío antes de ejecutar `sam deploy`.
+
 ## [0.1.1] - 2026-10-20
 
 ### Cambiado
@@ -55,6 +68,7 @@ Todos los cambios relevantes se documentan aquí. El formato sigue
 - Una firma por invocación; no hay batch.
 - La imagen Docker es opcional y no se usa en el flujo principal de despliegue.
 
-[Unreleased]: https://github.com/julioserpone/sri-xades-signer/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/julioserpone/sri-xades-signer/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/julioserpone/sri-xades-signer/releases/tag/v0.1.2
 [0.1.1]: https://github.com/julioserpone/sri-xades-signer/releases/tag/v0.1.1
 [0.1.0]: https://github.com/julioserpone/sri-xades-signer/releases/tag/v0.1.0

@@ -45,8 +45,10 @@ if [ ! -f "${JAR}" ]; then
 fi
 
 JAR_LIST="$(mktemp "${TMPDIR:-/tmp}/sri-jar-list.XXXXXX")"
+PACKAGE_DIR="$(mktemp -d "${TMPDIR:-/tmp}/sri-lambda-package.XXXXXX")"
 cleanup() {
   rm -f "${JAR_LIST}"
+  rm -rf "${PACKAGE_DIR}"
 }
 trap cleanup EXIT
 
@@ -56,8 +58,17 @@ if ! grep -q 'com/julioserpone/srixadessigner/lambda/SignHandler.class' "${JAR_L
   exit 1
 fi
 
+# El runtime Java de Lambda busca las dependencias en lib/.
+# Un JAR colocado en la raíz del ZIP no se carga como classpath.
+mkdir -p "${PACKAGE_DIR}/lib"
+cp "${JAR}" "${PACKAGE_DIR}/lib/"
 rm -f target/lambda.zip
-zip -j -q target/lambda.zip "${JAR}"
+(cd "${PACKAGE_DIR}" && zip -r -q "${ROOT}/target/lambda.zip" lib)
+
+if ! unzip -l target/lambda.zip | grep -q "lib/$(basename "${JAR}")"; then
+  echo "Error: el paquete no contiene el JAR en lib/." >&2
+  exit 1
+fi
 
 SIZE="$(du -h target/lambda.zip | cut -f1)"
 if command -v shasum >/dev/null 2>&1; then

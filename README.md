@@ -61,7 +61,7 @@ mvn -B spotless:apply
 ./scripts/package-lambda.sh
 ```
 
-El script ejecuta `mvn clean verify`, arma `target/lambda.zip` y muestra su SHA-256. El ZIP contiene el JAR shaded en la raíz, listo para:
+El script ejecuta `mvn clean verify`, arma `target/lambda.zip` y muestra su SHA-256. El ZIP contiene el JAR shaded dentro de `lib/`, que es la ruta que carga el runtime Java de AWS Lambda. Está listo para:
 
 ```bash
 aws lambda update-function-code \
