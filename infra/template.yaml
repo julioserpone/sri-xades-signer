@@ -75,7 +75,7 @@ Resources:
   SignFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub "sri-xades-signer-${Stage}"
+      FunctionName: !Sub "${AWS::StackName}"
       Description: Firma XAdES-BES para el SRI.
       CodeUri: ../target/lambda.zip
       Handler: com.julioserpone.srixadessigner.lambda.SignHandler::handleRequest

@@ -83,7 +83,14 @@ el ambiente de certificación del SRI. Crea:
 - Una función Lambda Java 21.
 - Una API Gateway regional con autorización **AWS_IAM**.
 - Permisos mínimos para leer el secreto y escribir logs.
-- Límite de concurrencia y throttling.
+- Throttling en API Gateway; concurrencia reservada opcional.
+
+Para un entorno de pruebas automatizado desde macOS:
+
+```bash
+./scripts/aws-create-test-env.sh
+./scripts/aws-delete-test-env.sh
+```
 
 Pasos resumidos:
 
