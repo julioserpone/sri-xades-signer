@@ -35,7 +35,7 @@ El resultado es `target/lambda.zip`. Verifica su contenido:
 unzip -l target/lambda.zip | head
 ```
 
-Debe contener un único JAR shaded en la raíz.
+Debe contener el JAR shaded dentro de `lib/`, por ejemplo `lib/sri-xades-signer-0.1.2.jar`.
 
 ## 2. Crear el secreto
 
@@ -83,7 +83,8 @@ sam deploy \
   --capabilities CAPABILITY_IAM \
   --resolve-s3 \
   --parameter-overrides \
-    CertificateSecretArn=arn:aws:secretsmanager:us-east-1:123456789012:secret:sri-xades-signer/cert-xxxxx \
+    CertificateSecretArn=arn:aws:secretsmanager:us-east-2:123456789012:secret:sri-xades-signer/cert-xxxxx \
+    ReservedConcurrency=0 \
     Stage=cert
 ```
 
@@ -105,7 +106,7 @@ La plantilla crea:
 - `AWS::Serverless::Function` Java 21, arquitectura `arm64`.
 - `AWS::Serverless::Api` regional con `AWS_IAM`.
 - Permiso `secretsmanager:GetSecretValue` sobre el ARN indicado.
-- Concurrencia reservada y throttling.
+- Throttling en API Gateway; la concurrencia reservada es opcional.
 - Log group con retención de 30 días.
 
 Obtén la URL:
@@ -128,7 +129,7 @@ export SIGNER_URL="$(aws cloudformation describe-stacks \
   --output text)"
 
 curl --request POST "$SIGNER_URL" \
-  --aws-sigv4 "aws:amz:us-east-1:execute-api" \
+  --aws-sigv4 "aws:amz:us-east-2:execute-api" \
   --user "$AWS_ACCESS_KEY_ID:$AWS_SECRET_ACCESS_KEY" \
   --header "x-amz-security-token: $AWS_SESSION_TOKEN" \
   --header "Content-Type: application/xml" \
@@ -192,7 +193,8 @@ Para diagnosticar un fallo, correlaciona `X-Request-Id` con CloudWatch.
 - Lambda se factura por invocación y GB-segundo.
 - API Gateway se factura por millón de solicitudes.
 - Secrets Manager se factura por secreto y por 10 000 llamadas a la API.
-- La concurrencia reservada limita el costo y el abuso.
+- La concurrencia reservada, si se configura, limita el costo y el abuso. En cuentas nuevas
+  usa `ReservedConcurrency=0` hasta tener una cuota de concurrencia mayor.
 - El caché en memoria reduce llamadas a Secrets Manager.
 
 ## 10. Antes de producción

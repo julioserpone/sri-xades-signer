@@ -42,10 +42,12 @@ Parameters:
 
   ReservedConcurrency:
     Type: Number
-    Default: 5
-    MinValue: 1
+    Default: 0
+    MinValue: 0
     MaxValue: 100
-    Description: Límite de concurrencia para controlar costo y abuso.
+    Description: >-
+      Límite de concurrencia para controlar costo y abuso. Usa 0 para no reservar
+      concurrencia; es lo recomendado en cuentas nuevas con límite 10.
 
   LogRetentionInDays:
     Type: Number
@@ -55,6 +57,7 @@ Parameters:
 
 Conditions:
   HasKmsKey: !Not [!Equals [!Ref CertificateKmsKeyArn, ""]]
+  HasReservedConcurrency: !Not [!Equals [!Ref ReservedConcurrency, 0]]
 
 Resources:
   SignApi:
@@ -80,7 +83,10 @@ Resources:
       Architectures: [arm64]
       MemorySize: 1024
       Timeout: 30
-      ReservedConcurrentExecutions: !Ref ReservedConcurrency
+      ReservedConcurrentExecutions: !If
+        - HasReservedConcurrency
+        - !Ref ReservedConcurrency
+        - !Ref AWS::NoValue
       Environment:
         Variables:
           CERTIFICATE_SECRET_ID: !Ref CertificateSecretArn
