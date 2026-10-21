@@ -208,3 +208,17 @@ Para diagnosticar un fallo, correlaciona `X-Request-Id` con CloudWatch.
 
 Completa la [checklist de certificación SRI](SRI-CERTIFICATION.md). No declares producción antes
 de que el SRI acepte el XML firmado y de que exista un procedimiento de rotación y monitoreo.
+
+## 11. Modo multicliente con invocación directa
+
+Para varios clientes con un `.p12` por inquilino, usa
+`infra/template-lambda-invoke.yaml` en lugar de la plantilla legacy. Este modo:
+
+- Crea un bucket S3 privado con SSE-S3 y versionado.
+- Despliega una Lambda compartida con el handler `InvokeSignHandler`.
+- Lee `tenants/<uuid>/certificate.p12` desde S3.
+- No crea API Gateway ni Secrets Manager.
+- Recibe `tenantUuid`, `password` y `xmlBase64` por invocación IAM/TLS.
+
+El procedimiento completo, el contrato JSON, el alta de clientes y la política IAM del backend
+están en [LAMBDA-INVOKE.md](LAMBDA-INVOKE.md).

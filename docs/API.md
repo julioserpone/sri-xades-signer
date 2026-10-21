@@ -1,5 +1,9 @@
 # API
 
+Este documento describe el contrato HTTP legacy (API Gateway + Secrets Manager). Para el modo
+multicliente recomendado para Laravel, que invoca la Lambda directamente y lee el PKCS#12 desde
+S3, consulta [LAMBDA-INVOKE.md](LAMBDA-INVOKE.md).
+
 ## Endpoint
 
 ```http

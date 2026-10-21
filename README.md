@@ -20,9 +20,13 @@ Recibe **un** XML de comprobante y devuelve el mismo XML con una firma XAdES-BES
 - `KeyInfo` incluido y firmado.
 - Transformada `enveloped-signature` sobre el `id` de la raíz.
 - Codificación UTF-8.
-- Certificado PKCS#12 cargado desde **AWS Secrets Manager**, nunca desde el repositorio.
+- Certificado PKCS#12 cargado desde **AWS Secrets Manager** (modo mono-certificado) o desde
+  **S3 por inquilino** (modo multicliente con invocación directa).
 
-El firmador **no** implementa autenticación propia: el endpoint debe publicarse detrás de **API Gateway con autenticación IAM**. No expongas un endpoint público sin autenticación; sería un oráculo de firma.
+El firmador **no** implementa autenticación propia: el endpoint HTTP debe publicarse detrás de
+**API Gateway con autenticación IAM**. En el modo multicliente, la Lambda se invoca directamente
+con IAM y no se publica ningún endpoint. No expongas el firmador sin autenticación; sería un
+oráculo de firma.
 
 ## Requisitos
 
@@ -77,13 +81,23 @@ docker build -t sri-xades-signer .
 
 ## Despliegue
 
+Hay dos modos:
+
+- **Mono-certificado (legacy):** `infra/template.yaml`, Secrets Manager y API Gateway con IAM.
+  Es el modo que usa el entorno de pruebas actual.
+- **Multicliente (recomendado para Laravel):** `infra/template-lambda-invoke.yaml`, un bucket S3
+  privado, una Lambda compartida y una clave `tenants/<uuid>/certificate.p12` por cliente. El
+  backend invoca la Lambda directamente con IAM. Ver
+  [docs/LAMBDA-INVOKE.md](docs/LAMBDA-INVOKE.md).
+
 La plantilla usa `Stage=cert` por defecto. No uses `Stage=prod` hasta completar la validación en
 el ambiente de certificación del SRI. Crea:
 
 - Una función Lambda Java 21.
-- Una API Gateway regional con autorización **AWS_IAM**.
-- Permisos mínimos para leer el secreto y escribir logs.
-- Throttling en API Gateway; concurrencia reservada opcional.
+- Una API Gateway regional con autorización **AWS_IAM** (modo legacy), o una invocación directa
+  protegida por IAM (modo multicliente).
+- Permisos mínimos para leer el certificado y escribir logs.
+- Throttling en API Gateway o concurrencia reservada opcional.
 
 Para un entorno de pruebas automatizado desde macOS:
 
@@ -99,6 +113,9 @@ Pasos resumidos:
    o empaquetarlo localmente.
 3. Desplegar `infra/template.yaml` con SAM.
 4. Probar con firma SigV4.
+
+Para el modo multicliente con S3, no crees un secreto ni despliegues API Gateway: sigue
+[docs/LAMBDA-INVOKE.md](docs/LAMBDA-INVOKE.md).
 
 Si es tu primera vez en AWS, sigue [docs/AWS-SETUP.md](docs/AWS-SETUP.md): incluye usuario
 IAM, perfil de AWS CLI, certificado de prueba, secreto, despliegue, prueba del endpoint y
@@ -140,6 +157,23 @@ Si no usas credenciales temporales, omite el header `x-amz-security-token`.
 
 Errores: `400`, `405`, `413`, `415` y `500` con JSON `{"error":"...","requestId":"..."}`. Ver [docs/API.md](docs/API.md).
 
+## Invocación directa (multicliente)
+
+El modo recomendado para Laravel no usa HTTP. El backend invoca la Lambda con:
+
+```json
+{
+  "tenantUuid": "123e4567-e89b-12d3-a456-426614174000",
+  "password": "<password del PKCS#12>",
+  "xmlBase64": "<XML en base64>"
+}
+```
+
+La respuesta contiene `signedXmlBase64` o un código de error seguro. La Lambda lee el
+certificado desde `s3://<bucket>/tenants/<uuid>/certificate.p12`. El password viaja por TLS/IAM y
+no se registra. Ver [docs/LAMBDA-INVOKE.md](docs/LAMBDA-INVOKE.md) para el despliegue, IAM,
+contrato completo y ejemplo de alta de clientes.
+
 ## Uso local (sin AWS)
 
 ```bash
@@ -154,19 +188,25 @@ La contraseña se lee de una variable de entorno. `--password` existe solo para 
 
 ## Seguridad
 
-- La clave privada vive en **AWS Secrets Manager**; no se acepta por variable de entorno ni por cuerpo HTTP.
-- El secreto esperado es JSON:
+- En el modo legacy la clave privada vive en **AWS Secrets Manager**; en el modo multicliente
+  vive en un bucket S3 privado bajo `tenants/<uuid>/certificate.p12`. No se acepta por variable
+  de entorno ni por cuerpo HTTP.
+- El secreto legacy esperado es JSON:
 
   ```json
   {"p12Base64":"...","password":"...","alias":"opcional"}
   ```
 
-- La función usa un rol IAM con `secretsmanager:GetSecretValue` sobre un ARN concreto.
+- La función usa un rol IAM con `secretsmanager:GetSecretValue` sobre un ARN concreto o
+  `s3:GetObject` sobre el prefijo de certificados.
+- En el modo multicliente, el password se recibe en la invocación IAM/TLS, se usa solo para abrir
+  el PKCS#12 y se limpia de memoria. No se registra ni se persiste.
 - El parser XML bloquea DTD, entidades externas, XInclude y esquemas externos.
 - Se limita el tamaño del cuerpo y se restringe la raíz a comprobantes SRI.
 - Se rechazan documentos que ya tengan firma.
 - No se registra el XML, la contraseña ni el contenido del PKCS#12.
-- El endpoint debe tener autenticación IAM y, preferiblemente, WAF y límites de uso.
+- El endpoint HTTP debe tener autenticación IAM y, preferiblemente, WAF y límites de uso. La
+  invocación directa debe permitirse solo al rol del backend.
 
 Lee [SECURITY.md](SECURITY.md) y [docs/THREAT-MODEL.md](docs/THREAT-MODEL.md).
 
@@ -176,10 +216,12 @@ Lee [SECURITY.md](SECURITY.md) y [docs/THREAT-MODEL.md](docs/THREAT-MODEL.md).
 src/main/java/com/julioserpone/srixadessigner/
   XadesBesSigner.java              Firma XAdES-BES con DSS
   config/SignerConfig.java         Límites y opciones por entorno
-  crypto/                          PKCS#12 y Secrets Manager
-  lambda/SignHandler.java          Handler API Gateway
+  crypto/                          PKCS#12, Secrets Manager y S3 por inquilino
+  lambda/SignHandler.java          Handler API Gateway (legacy)
+  lambda/InvokeSignHandler.java    Handler de invocación directa multicliente
   xml/                             Parser endurecido y verificación
-infra/template.yaml                SAM: Lambda + API Gateway IAM
+infra/template.yaml                SAM: Lambda + API Gateway IAM (legacy)
+infra/template-lambda-invoke.yaml  SAM: Lambda directa + S3 por inquilino
 scripts/                           Empaquetado y configuración de GitHub
 docs/                              API, despliegue, ADR y certificación
 ```
@@ -187,6 +229,7 @@ docs/                              API, despliegue, ADR y certificación
 ## Documentación
 
 - [API](docs/API.md)
+- [Invocación directa con S3](docs/LAMBDA-INVOKE.md)
 - [Despliegue](docs/DEPLOY.md)
 - [Certificación SRI](docs/SRI-CERTIFICATION.md)
 - [Modelo de amenazas](docs/THREAT-MODEL.md)

@@ -1,0 +1,175 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Firmador XAdES-BES para el SRI con invocación directa de Lambda.
+  Cada inquilino entrega su PKCS#12 en S3; la Lambda se invoca con IAM y no
+  expone un endpoint HTTP.
+
+Parameters:
+  Stage:
+    Type: String
+    Default: cert
+    AllowedValues: [cert, dev, prod]
+    Description: Etapa de despliegue. Usa prod solo después de la certificación SRI.
+
+  MaxXmlBytes:
+    Type: Number
+    Default: 1048576
+    MinValue: 1024
+    MaxValue: 5242880
+    Description: Tamaño máximo del XML de entrada.
+
+  MaxCertificateBytes:
+    Type: Number
+    Default: 1048576
+    MinValue: 1024
+    MaxValue: 5242880
+    Description: Tamaño máximo del PKCS#12 leído desde S3.
+
+  AllowedRoots:
+    Type: String
+    Default: ""
+    Description: Raíces permitidas separadas por coma; vacío usa la lista SRI por defecto.
+
+  CertificateCacheSeconds:
+    Type: Number
+    Default: 300
+    MinValue: 0
+    MaxValue: 3600
+    Description: TTL de la identidad de firma en memoria. 0 desactiva el caché.
+
+  CertificateCacheMaxEntries:
+    Type: Number
+    Default: 100
+    MinValue: 1
+    MaxValue: 1000
+    Description: Máximo de identidades de inquilinos en memoria por instancia.
+
+  CertificateAlias:
+    Type: String
+    Default: ""
+    Description: Alias opcional dentro del PKCS#12; vacío usa la única clave privada.
+
+  ReservedConcurrency:
+    Type: Number
+    Default: 0
+    MinValue: 0
+    MaxValue: 100
+    Description: >-
+      Límite de concurrencia para controlar costo y abuso. Usa 0 para no reservar
+      concurrencia; es lo recomendado en cuentas nuevas con límite 10.
+
+  LogRetentionInDays:
+    Type: Number
+    Default: 30
+    AllowedValues: [7, 14, 30, 60, 90, 180, 365]
+    Description: Retención de logs en CloudWatch.
+
+Conditions:
+  HasReservedConcurrency: !Not [!Equals [!Ref ReservedConcurrency, 0]]
+
+Resources:
+  CertificateBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      VersioningConfiguration:
+        Status: Enabled
+      Tags:
+        - Key: Stage
+          Value: !Ref Stage
+
+  CertificateBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref CertificateBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: DenyInsecureTransport
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource:
+              - !GetAtt CertificateBucket.Arn
+              - !Sub "${CertificateBucket.Arn}/*"
+            Condition:
+              Bool:
+                aws:SecureTransport: "false"
+
+  SignFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}"
+      Description: Firma XAdES-BES por inquilino leyendo el PKCS#12 desde S3.
+      CodeUri: ../target/lambda.zip
+      Handler: com.julioserpone.srixadessigner.lambda.InvokeSignHandler::handleRequest
+      Runtime: java21
+      Architectures: [arm64]
+      MemorySize: 1024
+      Timeout: 30
+      Tags:
+        Stage: !Ref Stage
+      ReservedConcurrentExecutions: !If
+        - HasReservedConcurrency
+        - !Ref ReservedConcurrency
+        - !Ref AWS::NoValue
+      Environment:
+        Variables:
+          CERTIFICATE_S3_BUCKET: !Ref CertificateBucket
+          CERTIFICATE_S3_PREFIX: "tenants/"
+          MAX_XML_BYTES: !Ref MaxXmlBytes
+          MAX_CERTIFICATE_BYTES: !Ref MaxCertificateBytes
+          ALLOWED_ROOTS: !Ref AllowedRoots
+          CERTIFICATE_CACHE_SECONDS: !Ref CertificateCacheSeconds
+          CERTIFICATE_CACHE_MAX_ENTRIES: !Ref CertificateCacheMaxEntries
+          CERTIFICATE_ALIAS: !Ref CertificateAlias
+          VERIFY_AFTER_SIGN: "true"
+          REQUIRE_CERTIFICATE_VALIDITY: "true"
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Statement:
+            - Effect: Allow
+              Action:
+                - s3:GetObject
+              Resource: !Sub "${CertificateBucket.Arn}/tenants/*"
+
+  SignFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${SignFunction}"
+      RetentionInDays: !Ref LogRetentionInDays
+
+Outputs:
+  FunctionName:
+    Description: Nombre de la función Lambda para invocación directa
+    Value: !Ref SignFunction
+
+  FunctionArn:
+    Description: ARN de la función Lambda
+    Value: !GetAtt SignFunction.Arn
+
+  CertificateBucketName:
+    Description: Bucket privado donde se guardan los PKCS#12 por inquilino
+    Value: !Ref CertificateBucket
+
+  CertificateBucketArn:
+    Description: ARN del bucket de certificados
+    Value: !GetAtt CertificateBucket.Arn
+
+  CertificateS3Prefix:
+    Description: Prefijo de las claves; use tenants/<uuid>/certificate.p12
+    Value: "tenants/"
