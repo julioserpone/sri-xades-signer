@@ -4,6 +4,10 @@ Esta guía está pensada para una cuenta AWS nueva y para desplegar el firmador 
 ambiente de **pruebas/certificación**. No uses el certificado ni el usuario de producción
 para estas pruebas.
 
+> Para el modo multicliente con un PKCS#12 por inquilino en S3 e invocación directa de Lambda,
+> consulta [LAMBDA-INVOKE.md](LAMBDA-INVOKE.md). Esta guía describe el modo legacy con Secrets
+> Manager y API Gateway.
+
 ## 1. Decisiones iniciales
 
 - **Región:** usa `us-east-2` en todos los comandos. Si eliges otra, cámbiala de forma

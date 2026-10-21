@@ -5,6 +5,24 @@ Todos los cambios relevantes se documentan aquí. El formato sigue
 
 ## [Unreleased]
 
+### Agregado
+
+- Proveedor `S3SigningIdentityProvider` para cargar el PKCS#12 por inquilino desde
+  `tenants/<uuid>/certificate.p12`, con validación estricta de UUID, caché LRU, TTL y
+  verificación del hash SHA-256 del password en cada invocación.
+- Handler `InvokeSignHandler` para invocación directa de Lambda con el contrato
+  `{tenantUuid,password,xmlBase64}` y respuesta `{signedXmlBase64,requestId}`.
+- Plantilla SAM `infra/template-lambda-invoke.yaml` con bucket S3 privado, SSE-S3,
+  versionado, bloqueo de acceso público, Lambda con permisos mínimos y sin API Gateway.
+- Documentación `docs/LAMBDA-INVOKE.md` con despliegue, alta de inquilinos, contrato JSON,
+  política IAM del backend y consideraciones de seguridad/costo.
+- Pruebas unitarias del proveedor S3 y del handler de invocación directa.
+
+### Nota
+
+- El modo legacy con Secrets Manager y API Gateway se mantiene sin cambios para no romper el
+  entorno de pruebas existente.
+
 ## [0.1.3] - 2026-10-20
 
 ### Agregado

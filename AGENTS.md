@@ -16,9 +16,12 @@ con la ficha SRI y con el perfil validado en certificación.
    firmas múltiples ni un endpoint que firme contenido arbitrario.
 3. **Sin oráculo público:** el endpoint debe usar autenticación IAM. No agregues rutas públicas,
    claves API embebidas ni bypass de autenticación.
-4. **Secretos:** la clave privada y la contraseña del PKCS#12 viven en AWS Secrets Manager.
-   Nunca las pongas en el repositorio, en variables de entorno, en logs, en mensajes de error,
-   en pruebas o en artefactos.
+4. **Secretos:** la clave privada vive en AWS Secrets Manager (modo legacy) o en un bucket S3
+   privado bajo `tenants/<uuid>/certificate.p12` (modo multicliente aprobado en ADR 0005). La
+   contraseña del PKCS#12 no se persiste en AWS en el modo multicliente: se recibe por invocación
+   IAM/TLS, se usa solo para abrir el PKCS#12 y se limpia de memoria. Nunca pongas certificados,
+   contraseñas o claves privadas en el repositorio, variables de entorno, logs, mensajes de error,
+   pruebas o artefactos.
 5. **Parser endurecido:** no habilites DTD, entidades externas, XInclude, esquemas externos ni
    expansión de entidades. No elimines los límites de tamaño, la lista de raíces permitidas ni
    el rechazo de documentos ya firmados.
@@ -43,10 +46,15 @@ El check obligatorio de `main` es `ci-success`.
 
 - `src/main/java/com/julioserpone/srixadessigner/XadesBesSigner.java`: configuración DSS,
   referencia al `id` de la raíz, transformada enveloped y firma.
-- `src/main/java/com/julioserpone/srixadessigner/crypto/`: PKCS#12 y Secrets Manager.
+- `src/main/java/com/julioserpone/srixadessigner/crypto/`: PKCS#12, Secrets Manager y S3 por
+  inquilino.
 - `src/main/java/com/julioserpone/srixadessigner/xml/`: parser seguro y verificación XMLDSig.
-- `src/main/java/com/julioserpone/srixadessigner/lambda/SignHandler.java`: contrato API Gateway.
-- `infra/template.yaml`: Lambda + API Gateway IAM + permisos.
+- `src/main/java/com/julioserpone/srixadessigner/lambda/SignHandler.java`: contrato API Gateway
+  legacy.
+- `src/main/java/com/julioserpone/srixadessigner/lambda/InvokeSignHandler.java`: invocación
+  directa multicliente.
+- `infra/template.yaml`: Lambda + API Gateway IAM + Secrets Manager (legacy).
+- `infra/template-lambda-invoke.yaml`: Lambda directa + S3 por inquilino.
 - `docs/`: API, despliegue, ADR, modelo de amenazas y certificación.
 - `scripts/`: empaquetado y configuración de GitHub.
 

@@ -43,19 +43,35 @@ Quedan fuera de alcance, salvo que demuestren impacto real:
 
 ## Modelo de seguridad
 
-- **Autenticación:** API Gateway con `AWS_IAM`; el cliente firma con SigV4.
-- **Autorización:** rol IAM con `secretsmanager:GetSecretValue` sobre un ARN concreto.
-- **Clave privada:** PKCS#12 almacenado en Secrets Manager; no se acepta por HTTP ni por entorno.
+- **Autenticación:** API Gateway con `AWS_IAM` (modo legacy) o invocación directa de Lambda con
+  IAM (modo multicliente). El cliente firma con SigV4 o usa el SDK de AWS.
+- **Autorización:** rol IAM con `secretsmanager:GetSecretValue` sobre un ARN concreto o
+  `s3:GetObject` sobre el prefijo `tenants/` del bucket de certificados.
+- **Clave privada:** PKCS#12 almacenado en Secrets Manager (legacy) o en un bucket S3 privado
+  (multicliente); no se acepta por HTTP ni por entorno.
+- **Password:** en el modo multicliente viaja en la invocación IAM/TLS, se usa solo para abrir el
+  PKCS#12 y se limpia de memoria; no se persiste en AWS ni se registra.
 - **Aislamiento:** una función Lambda, sin acceso a red salvo AWS APIs; no se necesita VPC.
 - **Entrada:** XML UTF-8, tamaño máximo configurable, raíz permitida y sin firma previa.
 - **Parser:** DTD, entidades externas, XInclude y esquemas externos deshabilitados.
 - **Salida:** XML firmado; no se registra el cuerpo ni el secreto.
-- **Costo/abuso:** concurrencia reservada y throttling en API Gateway.
+- **Costo/abuso:** concurrencia reservada y throttling en API Gateway o concurrencia reservada en
+  la invocación directa.
 
 ## Rotación de certificado
 
+### Modo legacy (Secrets Manager)
+
 1. Crea el nuevo PKCS#12 y valida que la clave coincida con el certificado.
 2. Actualiza el secreto en Secrets Manager.
+3. Espera `CERTIFICATE_CACHE_SECONDS` o fuerza un cold start.
+4. Firma un comprobante de prueba y valida la cadena y la firma.
+5. Revoca el certificado anterior según el procedimiento de tu entidad certificadora.
+
+### Modo multicliente (S3)
+
+1. Crea el nuevo PKCS#12 y valida que la clave coincida con el certificado.
+2. Sobrescribe `tenants/<uuid>/certificate.p12` en el bucket privado.
 3. Espera `CERTIFICATE_CACHE_SECONDS` o fuerza un cold start.
 4. Firma un comprobante de prueba y valida la cadena y la firma.
 5. Revoca el certificado anterior según el procedimiento de tu entidad certificadora.

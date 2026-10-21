@@ -9,7 +9,7 @@ where the upstream artifacts provide them.
 |---|---:|---|---|
 | Digital Signature Service (DSS) | 6.5.1 | LGPL-2.1 | https://github.com/esig/dss |
 | Bouncy Castle (bcprov, bcpkix, bcutil) | 1.86 | MIT | https://www.bouncycastle.org/ |
-| AWS SDK for Java v2 (Secrets Manager, URL connection client) | 2.57.0 | Apache-2.0 | https://aws.amazon.com/sdk-for-java/ |
+| AWS SDK for Java v2 (Secrets Manager, S3, URL connection client) | 2.57.0 | Apache-2.0 | https://aws.amazon.com/sdk-for-java/ |
 | AWS Lambda Java Core | 1.4.1 | Apache-2.0 | https://github.com/aws/aws-lambda-java-libs |
 | AWS Lambda Java Events | 3.16.1 | Apache-2.0 | https://github.com/aws/aws-lambda-java-libs |
 | Jackson Databind | 2.22.3 | Apache-2.0 | https://github.com/FasterXML/jackson |

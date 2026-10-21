@@ -15,14 +15,20 @@ pendientes. No sustituye una revisión de seguridad formal.
 ## Fronteras de confianza
 
 ```text
+Modo legacy:
 Cliente autorizado --SigV4--> API Gateway IAM --> Lambda --> Secrets Manager
-                                                   |
-                                                   +--> DSS / BouncyCastle
+
+Modo multicliente:
+Backend Laravel --IAM/SDK--> Lambda --> S3 privado (tenants/<uuid>/certificate.p12)
+                                      |
+                                      +--> DSS / BouncyCastle
 ```
 
 - El cliente no es confiable más allá de su identidad IAM.
 - El XML es no confiable.
-- Secrets Manager y el rol IAM son la frontera de la clave privada.
+- En el modo legacy, Secrets Manager y el rol IAM son la frontera de la clave privada.
+- En el modo multicliente, el bucket S3 privado y el rol IAM de la Lambda son la frontera de la
+  clave privada; el backend solo debe poder invocar la función.
 - CloudWatch no debe recibir secretos ni XML.
 
 ## Amenazas y mitigaciones
@@ -30,8 +36,12 @@ Cliente autorizado --SigV4--> API Gateway IAM --> Lambda --> Secrets Manager
 | Amenaza | Impacto | Mitigación | Estado |
 |---|---|---|---|
 | Endpoint público actúa como oráculo de firma | Alto | API Gateway `AWS_IAM`, sin API keys ni rutas públicas | Implementado |
-| Robo de clave privada del repositorio | Crítico | `.gitignore`, revisión, secret scanning; PKCS#12 solo en Secrets Manager | Implementado |
-| Clave en variable de entorno o logs | Crítico | El handler solo recibe el ARN; no registra secretos | Implementado |
+| Invocación directa sin IAM | Alto | La función no tiene endpoint público; el rol del backend es el único autorizado | Implementado |
+| Lectura de certificados de otro inquilino | Crítico | Bucket privado, `s3:GetObject` solo para la Lambda, UUID validado y prefijo fijo | Implementado |
+| Password incorrecto usando identidad cacheada | Alto | Hash SHA-256 del password verificado en cada invocación | Implementado |
+| Fuga del password en logs o errores | Crítico | No se registra; errores genéricos; `char[]` se limpia | Implementado |
+| Robo de clave privada del repositorio | Crítico | `.gitignore`, revisión, secret scanning; PKCS#12 solo en Secrets Manager o S3 privado | Implementado |
+| Clave en variable de entorno o logs | Crítico | El handler solo recibe el ARN o lee S3; no registra secretos | Implementado |
 | XXE / lectura de archivos | Alto | Parser sin DTD, entidades externas, XInclude ni schemas externos | Implementado |
 | Expansión de entidades / DoS | Medio | `FEATURE_SECURE_PROCESSING`, límite de bytes, throttling y concurrencia reservada opcional | Implementado |
 | Firma de contenido arbitrario | Alto | Lista de raíces SRI, `id` obligatorio, un XML por llamada | Implementado |
@@ -50,8 +60,10 @@ Cliente autorizado --SigV4--> API Gateway IAM --> Lambda --> Secrets Manager
 ## Controles operativos recomendados
 
 - Usar una cuenta AWS dedicada o un rol con alcance mínimo.
-- Habilitar CloudTrail y alertas sobre `GetSecretValue` anómalo.
-- Restringir quién puede modificar el secreto y la función.
+- Habilitar CloudTrail y alertas sobre `GetSecretValue` y `GetObject` anómalos.
+- Restringir quién puede modificar el secreto, el bucket de certificados y la función.
+- Mantener el bucket S3 con bloqueo de acceso público, SSE-S3 y versionado.
+- No dar `s3:GetObject` al backend; solo la Lambda debe leer los PKCS#12.
 - Usar una CMK de KMS si la política de la organización lo exige.
 - Configurar WAF y límites de tasa si el endpoint se expone a muchos clientes.
 - Revisar logs sin incluir cuerpos XML.
@@ -61,8 +73,10 @@ Cliente autorizado --SigV4--> API Gateway IAM --> Lambda --> Secrets Manager
 
 ## Riesgos residuales
 
-- El endpoint sigue siendo una capacidad de firma para cualquier identidad IAM autorizada; la
-  autorización granular depende de la política de API Gateway/IAM.
+- El endpoint o la invocación directa siguen siendo una capacidad de firma para cualquier
+  identidad IAM autorizada; la autorización granular depende de la política IAM.
+- En el modo multicliente, el backend puede enviar el UUID y el password de cualquier inquilino.
+  El aislamiento entre clientes depende de la lógica de autorización del backend, no de la Lambda.
 - SHA-1 es obligatorio por la ficha y no debe reutilizarse en otros sistemas.
 - La aceptación del SRI no está garantizada hasta la certificación.
-- La disponibilidad depende de AWS y de Secrets Manager.
+- La disponibilidad depende de AWS, de Secrets Manager o de S3 según el modo.
